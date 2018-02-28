@@ -1,0 +1,7 @@
+#cached python code
+__pycache__/
+
+.DS_Store
+
+#Config including sensitive information
+config.py
