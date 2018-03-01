@@ -1,1 +1,2 @@
 DISCORD_TOKEN = ''
+MYSQL_URL = ''
