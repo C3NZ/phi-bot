@@ -1,2 +1,3 @@
 DISCORD_TOKEN = ''
 MYSQL_URL = ''
+DEBUG_MODE = False
