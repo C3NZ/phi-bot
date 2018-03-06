@@ -38,7 +38,12 @@ class Bank(Base):
 #Create the database connection and configure the session to be
 #binded to the database
 def create_db_connection():
-	database = create_engine(config.MYSQL_URL)
+	database = None
+	if config.DEV_MODE:
+		database = create_engine(config.MYSQL_DEV_URL)
+	else:
+		database = create_engine(config.MYSQL_PROD_URL)
+		
 	Session.configure(bind=database)
 	Base.metadata.create_all(bind=database)
 
@@ -71,7 +76,7 @@ def get_funds(discord_id):
 		session.close()
 		return user_in_db.funds
 
-
+#subtract funds from a users account
 def subtract_funds(discord_id, amount):
 	session = Session()
 	user_in_db = session.query(Bank).filter(Bank.discord_id == discord_id).first()
@@ -82,7 +87,7 @@ def subtract_funds(discord_id, amount):
 	user_in_db.funds -= amount
 	session.commit()
 
-
+#add funds to a users account
 def add_funds(discord_id, amount):
 	session = Session()
 	user_in_db = session.query(Bank).filter(Bank.discord_id == discord_id).first()
