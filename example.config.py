@@ -1,3 +1,4 @@
 DISCORD_TOKEN = ''
-MYSQL_URL = ''
-DEBUG_MODE = False
+MYSQL_DEV_URL = ''
+MYSQL_PROD_URL = ''
+DEV_MODE = True
