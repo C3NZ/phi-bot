@@ -67,7 +67,7 @@ class PhiBot(discord.Client):
 
 
 def shutdown():
-	log_to_console('shutting down now')
+	print('Shutting down...')
 
 def main(loop):
 	#Shared lock for keeping database information safe
