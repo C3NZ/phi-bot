@@ -23,6 +23,11 @@ class PhiBot(discord.Client):
 	async def thats_me(self, message):
 		await self.send_message(message.channel, 'Hey, that\'s me!')
 
+
+	async def get_funds(self, message):
+		with await self.lock:
+			self.send_message(message.channel, db.get_funds(message.author.name))
+
 	#Process a users bank account
 	async def process_bank_account(self, command_input, message):
 	
@@ -31,9 +36,27 @@ class PhiBot(discord.Client):
 				await self.send_message(message.channel, 'This is where your bank info will be!')
 		else:
 			if command_input[1] == 'start':
-				await self.send_message(message.channel, 'Starting your bank account!')
+
+				with await self.lock:
+					user_not_in_bank = db.create_new_bank_account(message.author.id)
+
+					if user_not_in_bank:
+						await self.send_message(message.channel, 'Your bank account has been created and started with 200 credits!')
+					else:
+						await self.send_message(message.channel, 'You already have an account within our bank!')
+			elif command_input[1] == 'funds':
+				funds = 0
+				with await self.lock:
+					funds = db.get_funds(message.author.id)
+
+				if funds == -1:
+					message_to_send = '@{}, '.format(message.author.id)
+					await self.send_message(message.channel, 'You need to have a bank account to have funds!')
+				else:
+					await self.send_message(message.channel, funds)
 			elif command_input[1] == 'transfer':
 				if len(command_input) < 4:
+					message_to_send = '@{}, '.format(message.author.id)
 					await self.send_message(message.channel, '```Sorry, this is an invalid use transfer, please try $help bank for more information```')
 
 
@@ -68,13 +91,11 @@ class PhiBot(discord.Client):
 
 def shutdown():
 	print('Shutting down...')
+	db.close_database()
 
 def main(loop):
 	#Shared lock for keeping database information safe
 	lock = asyncio.Lock()
-
-	#Acquire the lock
-	loop.run_until_complete(lock.acquire())
 
 	phi = PhiBot(lock)
 
