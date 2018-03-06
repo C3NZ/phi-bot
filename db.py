@@ -9,11 +9,6 @@ Session = sessionmaker();
 
 #Generates table and mapper for all classes that we create
 Base = declarative_base()
-
-class RandomTable(Base):
-	__tablename__ = 'random_table'
-
-	t_id = Column(Integer, primary_key=True)
 	
 #Command history table
 class CommandHistory(Base):
@@ -32,7 +27,7 @@ class UserCommandCount(Base):
 	command_name = Column(String(50))
 	count = Column(Integer)
 
-#Table for the amount
+#Table for keeping track of users bank accounts
 class Bank(Base):
 	__tablename__ = 'bank'
 
