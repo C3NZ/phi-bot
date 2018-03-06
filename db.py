@@ -22,7 +22,7 @@ class CommandHistory(Base):
 	command_id = Column(Integer, primary_key=True)
 	command = Column(String(50))
 	params = Column(String(50))
-	user = Column(String(50))
+	discord_id = Column(String(50))
 
 #User command entered count table
 class UserCommandCount(Base):
@@ -37,8 +37,8 @@ class Bank(Base):
 	__tablename__ = 'bank'
 
 	user_id = Column(Integer, primary_key=True)
-	user = Column(String(50))
-	currency = Column(Integer)
+	discord_id = Column(String(50))
+	funds = Column(Integer)
 
 #Create the database connection and configure the session to be
 #binded to the database
@@ -47,13 +47,63 @@ def create_db_connection():
 	Session.configure(bind=database)
 	Base.metadata.create_all(bind=database)
 
+def close_database():
+	session = Session()
+	session.close()
+
+#Create a new bank account for a user if they're not already registered one
+def create_new_bank_account(discord_id):
+	session = Session()
+	user_in_db = session.query(Bank).filter(Bank.discord_id == discord_id).first()
+	
+	if user_in_db:
+		return False
+
+	new_banker = Bank(discord_id=discord_id, funds=200)
+	session.add(new_banker)
+	session.commit()
+	
+	return True
+
+#Get the users funds
+def get_funds(discord_id):
+	session = Session()
+	user_in_db = session.query(Bank).filter(Bank.discord_id == discord_id).first()
+
+	if not user_in_db:
+		return -1
+	else:
+		session.close()
+		return user_in_db.funds
+
+
+def subtract_funds(discord_id, amount):
+	session = Session()
+	user_in_db = session.query(Bank).filter(Bank.discord_id == discord_id).first()
+
+	if not user_in_db:
+		return False
+
+	user_in_db.funds -= amount
+	session.commit()
+
+
+def add_funds(discord_id, amount):
+	session = Session()
+	user_in_db = session.query(Bank).filter(Bank.discord_id == discord_id).first()
+
+	if not user_in_db:
+		return False
+
+	user_in_db.funds += amount
+	session.commit()
+
 def add_to_user_command_count(command_name, author):
 	session = Session()
-	session.query(UserCommandCount).filter_by(name=author)
 
 #Add commands to our history
-def add_command_to_history(command_name, parameters, author):
+def add_command_to_history(command_name, parameters, discord_id):
 	session = Session()
-	command = CommandHistory(command=command_name, params=" ".join(parameters), user=author)
+	command = CommandHistory(command=command_name, params=" ".join(parameters), discord_id=discord_id)
 	session.add(command)
 	session.commit()
