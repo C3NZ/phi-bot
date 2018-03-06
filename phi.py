@@ -23,14 +23,11 @@ class PhiBot(discord.Client):
 	async def thats_me(self, message):
 		await self.send_message(message.channel, 'Hey, that\'s me!')
 
-
-	async def get_funds(self, message):
-		with await self.lock:
-			self.send_message(message.channel, db.get_funds(message.author.name))
-
 	#Process a users bank account
 	async def process_bank_account(self, command_input, message):
-	
+		#Unique discord id of user we're talking to
+		discord_id = message.author.id
+
 		if len(command_input) == 1:
 				print(command_input)
 				await self.send_message(message.channel, 'This is where your bank info will be!')
@@ -38,25 +35,30 @@ class PhiBot(discord.Client):
 			if command_input[1] == 'start':
 
 				with await self.lock:
-					user_not_in_bank = db.create_new_bank_account(message.author.id)
+					user_not_in_bank = db.create_new_bank_account(discord_id)
 
 					if user_not_in_bank:
-						await self.send_message(message.channel, 'Your bank account has been created and started with 200 credits!')
+						message_to_send = '<@{}>, your bank account has just been created and you have been granted 200 credits! Yay!'.format(discord_id)
+						await self.send_message(message.channel, message_to_send)
 					else:
-						await self.send_message(message.channel, 'You already have an account within our bank!')
+						message_to_send = '<@{}>, you already have an account within our bank!'.format(discord_id)
+						await self.send_message(message.channel, message_to_send)
+			
 			elif command_input[1] == 'funds':
 				funds = 0
+				
 				with await self.lock:
-					funds = db.get_funds(message.author.id)
+					funds = db.get_funds(discord_id)
 
 				if funds == -1:
-					message_to_send = '@{}, '.format(message.author.id)
-					await self.send_message(message.channel, 'You need to have a bank account to have funds!')
+					message_to_send = '<@{}>, you do not have a bank account, but you can make one with the `$bank start` command :)'.format(discord_id)
+					await self.send_message(message.channel, message_to_send)
 				else:
-					await self.send_message(message.channel, funds)
+					message_to_send = '<@{}>, you have ${} in your bank account, have a nice day!'.format(discord_id, funds)
+					await self.send_message(message.channel, message_to_send)
 			elif command_input[1] == 'transfer':
-				if len(command_input) < 4:
-					message_to_send = '@{}, '.format(message.author.id)
+				if len(command_input) == 4:
+					print(command_input)
 					await self.send_message(message.channel, '```Sorry, this is an invalid use transfer, please try $help bank for more information```')
 
 
