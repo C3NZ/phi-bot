@@ -65,11 +65,6 @@ class PhiBot(discord.Client):
 			with await self.lock:
 				db.add_command_to_history(user_input[0], user_input[1:], message.author.name)
 
-#Very simple print wrapper for not having to write if statements all throughout the code
-def log_to_console(string):
-	if config.DEBUG_MODE:
-		print(string)
-
 
 def shutdown():
 	log_to_console('shutting down now')
