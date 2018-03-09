@@ -82,9 +82,11 @@ def subtract_funds(discord_id, amount):
 	session = Session()
 	user_in_db = session.query(Bank).filter(Bank.discord_id == discord_id).first()
 
+	#return false if the user is not found
 	if not user_in_db:
 		return False
 
+	#Escape the function if 
 	if user_in_db.funds < amount:
 		return False
 
@@ -110,6 +112,6 @@ def add_to_user_command_count(command_name, author):
 #Add commands to our history
 def add_command_to_history(command_name, parameters, discord_id):
 	session = Session()
-	command = CommandHistory(command=command_name, params=" ".join(parameters), discord_id=discord_id)
+	command = CommandHistory(command=command_name, params=parameters, discord_id=discord_id)
 	session.add(command)
 	session.commit()
