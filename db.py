@@ -39,6 +39,7 @@ class Bank(Base):
 #binded to the database
 def create_db_connection():
 	database = None
+	
 	if config.DEV_MODE:
 		database = create_engine(config.MYSQL_DEV_URL)
 	else:
@@ -84,8 +85,12 @@ def subtract_funds(discord_id, amount):
 	if not user_in_db:
 		return False
 
+	if user_in_db.funds < amount:
+		return False
+
 	user_in_db.funds -= amount
 	session.commit()
+	return True
 
 #add funds to a users account
 def add_funds(discord_id, amount):
@@ -97,6 +102,7 @@ def add_funds(discord_id, amount):
 
 	user_in_db.funds += amount
 	session.commit()
+	return True
 
 def add_to_user_command_count(command_name, author):
 	session = Session()

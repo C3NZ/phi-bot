@@ -19,10 +19,11 @@ class PhiBot(discord.Client):
 		print('-----')
 
 		await self.change_presence(game=discord.Game(name='culturology'))
-	
+
 	#Helper functions for processing commands
 	async def thats_me(self, message):
 		await self.send_message(message.channel, 'Hey, that\'s me!')
+		#await self.send_message(message.channel, 'Hey, that\'s me!')
 
 	#Start a users bank account if they don't already ahve one
 	async def start_bank_account(self, message):
@@ -64,14 +65,18 @@ class PhiBot(discord.Client):
 			amount = int(command_input[2])
 			receiving_user = command_input[3].lstrip('<@!').rstrip('>')
 			
+			#Prevent negative funds through
 			if amount < 0:
 				await self.send_message(message.channel, '<@{}> you can\'t transfer a negative amount of money!'.format(discord_id))
 				return
 			
+			#Validate that the user isn't trying to transfer funds to themselves
 			if discord_id == receiving_user:
 				await self.send_message(message.channel, '<@{}> you can\'t transfer a funds to yourself!'.format(discord_id))
 				return
 			
+			#attempt to subtract funds from the user who initiated the transfers
+			#bank account
 			with await self.lock:
 				funds_subtracted = db.subtract_funds(discord_id, amount)
 
@@ -79,6 +84,8 @@ class PhiBot(discord.Client):
 					await self.send_message(message.channel, '<@{}> You either tried transferring more than you have or do not have a bank account, this is embarrasing!'.format(discord_id))
 					return
 
+			#Attempt to add the new funds to the receiving users bank account,
+			#refund the initial user if the transaction fails
 			with await self.lock:
 				funds_added = db.add_funds(receiving_user, amount)
 
@@ -87,6 +94,7 @@ class PhiBot(discord.Client):
 					db.add_funds(discord_id, amount)
 					return
 
+			#Retrieve the balance of the user who just made the transfer
 			with await self.lock:
 				new_balance = db.get_funds(discord_id)
 				await self.send_message(message.channel, '<@{}> Successfully transferred funds, Your account balance is now: {} beans'.format(discord_id, new_balance))
@@ -110,7 +118,8 @@ class PhiBot(discord.Client):
 			await self.send_message(message.channel, '```Sorry, this is an invalid use transfer, please try $help bank for more information```')
 			print(e)
 				
-
+	#Gambling scaffolding, inactive and was just used for inserting funds
+	#into the users account
 	async def gamble(self, message):
 		discord_id = message.author.id
 		command_input = message.content.split()
@@ -135,7 +144,7 @@ class PhiBot(discord.Client):
 		elif message.content.startswith('$bank'):
 			await self.process_bank_account(message)
 		elif message.content.startswith('$gamble'):
-			await self.gamble(message)
+			#await self.gamble(message)
 		else:
 			return False
 
@@ -149,7 +158,7 @@ class PhiBot(discord.Client):
 		if valid_command:
 			user_input = message.content.split()
 			with await self.lock:
-				db.add_command_to_history(user_input[0], user_input[1:], message.author.name)
+				db.add_command_to_history(user_input[0], " ".join(user_input[1:]), message.author.name)
 
 
 def shutdown():
