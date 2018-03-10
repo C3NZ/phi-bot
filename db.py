@@ -106,8 +106,16 @@ def add_funds(discord_id, amount):
 	session.commit()
 	return True
 
-def add_to_user_command_count(command_name, author):
+def user_in_bank(discord_id):
+	in_db = False
 	session = Session()
+	user_in_db = session.query(Bank).filter(Bank.discord_id == discord_id).first()
+
+	if user_in_db:
+		in_db = True
+	
+	session.close()
+	return in_db
 
 #Add commands to our history
 def add_command_to_history(command_name, parameters, discord_id):
