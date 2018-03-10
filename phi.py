@@ -20,6 +20,15 @@ class PhiBot(discord.Client):
 
 		await self.change_presence(game=discord.Game(name='culturology'))
 
+	#Parse the id from a string
+	def parse_id_from_string(self, id_string):
+		return id_string.lstrip('<@!').rstrip('>')
+
+	#Generate a user object given the current server members and id
+	def make_user_object(self, server_members, id_string):
+		user_id = self.parse_id_from_string(id_string)
+		return discord.utils.get(server_members, id=user_id)
+
 	#Helper functions for processing commands
 	async def thats_me(self, message):
 		await self.send_message(message.channel, 'Hey, that\'s me!')
@@ -63,7 +72,7 @@ class PhiBot(discord.Client):
 		
 		if len(command_input) == 4:
 			amount = int(command_input[2])
-			receiving_user = command_input[3].lstrip('<@!').rstrip('>')
+			receiving_user = self.parse_id_from_string(command_input[3])
 			
 			#Prevent negative funds through
 			if amount < 0:
@@ -100,7 +109,7 @@ class PhiBot(discord.Client):
 				await self.send_message(message.channel, '<@{}> Successfully transferred funds, Your account balance is now: {} beans'.format(discord_id, new_balance))
 
 		else:
-			await self.send_message(message.channel, '```Sorry, this is an invalid use transfer, please try $help bank for more information```')
+			await self.send_message(message.channel, '```Sorry, this is an invalid use of transfer, please try $help bank for more information```')
 	
 	#Route bank account transaction request and handle input processing
 	async def process_bank_account(self, message):
@@ -132,6 +141,31 @@ class PhiBot(discord.Client):
 
 		await self.send_message(message.channel, '<@{}> You now have ${} in your bank account!'.format(discord_id, funds))
 
+	#
+	async def guess_game(self, message):
+		discord_id = message.author.id
+		command_input = message.content.split()
+		user_challenged =  self.make_user_object(message.server.members, command_input[2])
+		wagered_amount = 0
+		game_in_session = False
+
+		try:
+			wagered_amount = int(command_input[1])
+		except:
+			await self.send_message(message.channel, '<@{}> You have to wager an integer amount!'.format(discord_id))
+			return
+
+		if wagered_amount < 0:
+			await self.send_message(message.channel, '<@{}> You have to wager an amount greater than 0!'.format(discord_id))
+			return
+
+		if user_challenged and user_challenged.id != discord_id:
+			game_in_session = True
+		else:
+			await self.send_message(message.channel, '<@{}> You either didn\'t give me a valid user or this user doesn\'t have a bank account, sorry!'.format(discord_id))
+			return
+
+		await self.send_message(message.channel, '<@{}> you have been challenged by <@{}> to guess a number between 1 and 100 for {} beans! Do you accept? (y/n)'.format(user_challenged.id, discord_id, wagered_amount))
 
 	#Commmand processor
 	async def process_command(self, message):
@@ -144,13 +178,17 @@ class PhiBot(discord.Client):
 		elif message.content.startswith('$bank'):
 			await self.process_bank_account(message)
 		elif message.content.startswith('$gamble'):
+			pass
 			#await self.gamble(message)
+		elif message.content.startswith('$guessgame'):
+			await self.guess_game(message)
 		else:
 			return False
 
 		return True
 
-	#Discord Event handlers
+	#on message event handler. Sends command through custom command
+	#handler
 	async def on_message(self, message):
 		valid_command = await self.process_command(message)
 
@@ -161,9 +199,9 @@ class PhiBot(discord.Client):
 				db.add_command_to_history(user_input[0], " ".join(user_input[1:]), message.author.name)
 
 
+#Shutdown bp
 def shutdown():
 	print('Shutting down...')
-	db.close_database()
 
 def main(loop):
 	#Shared lock for keeping database information safe
