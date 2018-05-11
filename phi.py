@@ -3,14 +3,37 @@ import discord
 import asyncio
 import config
 import db
+import random
 
 #Discord client PhiBot
 class PhiBot(discord.Client):
 
 	def __init__(self, lock):
 		super().__init__()
-		self.lock = lock 
-
+		self.lock = lock
+		self.eb_quotes = [
+		'It is certain',
+		'It is decidedly so',
+		'Without a doubt',
+		'Yes, definitely',
+		'You may rely on it',
+		'As I see it, yes',
+		'Most likely',
+		'Outlook good',
+		'Yes',
+		'Signs point to yes',
+		'Reply hazy, please try again',
+		'Ask again later',
+		'Better not tell you now',
+		'Cannot predict now',
+		'Concentrate and ask again',
+		'Don\'t count on it',
+		'My reply is no',
+		'My sources say no',
+		'Outlook not so good',
+		'Very doubtful'
+		]
+		
 	#when the bot has readied up
 	async def on_ready(self):
 		print('logged in as')
@@ -18,7 +41,7 @@ class PhiBot(discord.Client):
 		print(self.user.id)
 		print('-----')
 
-		await self.change_presence(game=discord.Game(name='culturology'))
+		await self.change_presence(game=discord.Game(name='phi-bot v1.0'))
 
 	#Parse the id from a string
 	def parse_id_from_string(self, id_string):
@@ -31,8 +54,10 @@ class PhiBot(discord.Client):
 
 	#Helper functions for processing commands
 	async def thats_me(self, message):
-		await self.send_message(message.channel, 'Hey, that\'s me!')
-		#await self.send_message(message.channel, 'Hey, that\'s me!')
+		await self.send_message(message.channel, 'Hey, that\'s me!')	
+
+	async def eight_ball(self, message):
+		await self.send_message(message.channel, random.choice(self.eb_quotes))
 
 	#Start a users bank account if they don't already ahve one
 	async def start_bank_account(self, message):
@@ -116,6 +141,7 @@ class PhiBot(discord.Client):
 		
 		discord_id = message.author.id
 		command_input = message.content.split()
+		
 		try:
 			if command_input[1] == 'start':
 				await self.start_bank_account(message)
@@ -127,62 +153,23 @@ class PhiBot(discord.Client):
 			await self.send_message(message.channel, '```Sorry, this is an invalid use transfer, please try $help bank for more information```')
 			print(e)
 				
-	#Gambling scaffolding, inactive and was just used for inserting funds
-	#into the users account
-	async def gamble(self, message):
-		discord_id = message.author.id
-		command_input = message.content.split()
-		await self.send_message(message.channel, '<@{}> Although you didn\'t really gamble, heres some money!'.format(discord_id))
-
-		funds = 0
-		with await self.lock:
-			db.add_funds(discord_id, 200)
-			funds = db.get_funds(discord_id)
-
-		await self.send_message(message.channel, '<@{}> You now have ${} in your bank account!'.format(discord_id, funds))
-
-	#
-	async def guess_game(self, message):
-		discord_id = message.author.id
-		command_input = message.content.split()
-		user_challenged =  self.make_user_object(message.server.members, command_input[2])
-		wagered_amount = 0
-		game_in_session = False
-
-		try:
-			wagered_amount = int(command_input[1])
-		except:
-			await self.send_message(message.channel, '<@{}> You have to wager an integer amount!'.format(discord_id))
-			return
-
-		if wagered_amount < 0:
-			await self.send_message(message.channel, '<@{}> You have to wager an amount greater than 0!'.format(discord_id))
-			return
-
-		if user_challenged and user_challenged.id != discord_id:
-			game_in_session = True
-		else:
-			await self.send_message(message.channel, '<@{}> You either didn\'t give me a valid user or this user doesn\'t have a bank account, sorry!'.format(discord_id))
-			return
-
-		await self.send_message(message.channel, '<@{}> you have been challenged by <@{}> to guess a number between 1 and 100 for {} beans! Do you accept? (y/n)'.format(user_challenged.id, discord_id, wagered_amount))
-
 	#Commmand processor
 	async def process_command(self, message):
-		if message.content.startswith('$phi'):
+		content = message.content
+
+		if not content.startswith('$'):
+			return False
+
+		if content.startswith('$phi'):
 			await self.thats_me(message)
-		elif message.content.startswith('$cultured'):
-			await self.send_message(message.channel, 'Ah, yes, our lord and savior, @cenz#4867')
-		elif message.content.startswith('$goodboy'):
+		elif content.startswith('$goodboy'):
 			await self.send_message(message.channel, 'Woof!')
-		elif message.content.startswith('$bank'):
+		elif content.startswith('$bank'):
 			await self.process_bank_account(message)
-		elif message.content.startswith('$gamble'):
-			pass
-			#await self.gamble(message)
-		elif message.content.startswith('$guessgame'):
-			await self.guess_game(message)
+		elif content.startswith('$8ball'):
+			await self.eight_ball(message)
 		else:
+			await self.send_message(message.channel, '```Sorry, you didn\'t enter a valid command, please try $help for more information```')
 			return False
 
 		return True
@@ -196,7 +183,7 @@ class PhiBot(discord.Client):
 		if valid_command:
 			user_input = message.content.split()
 			with await self.lock:
-				db.add_command_to_history(user_input[0], " ".join(user_input[1:]), message.author.name)
+				db.add_command_to_history(user_input[0], " ".join(user_input[1:]), message.author.name, message.author.id)
 
 
 #Shutdown bp
@@ -209,7 +196,7 @@ def main(loop):
 
 	phi = PhiBot(lock)
 
-	#Start and login to the bot
+	#Manage the asyncio event loop
 	try:
 		loop.run_until_complete(phi.start(config.DISCORD_TOKEN))
 	except KeyboardInterrupt:
