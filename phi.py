@@ -34,14 +34,17 @@ class PhiBot(discord.Client):
 		'Very doubtful'
 		]
 		
-	#when the bot has readied up
+	#on startup
 	async def on_ready(self):
 		print('logged in as')
 		print(self.user.name)
 		print(self.user.id)
 		print('-----')
 
-		await self.change_presence(game=discord.Game(name='phi-bot v1.0'))
+		if config.DEV_MODE:
+			await self.change_presence(game=discord.Game(name='phi-bot DEV_MODE'))
+		else:
+			await self.change_presence(game=discord.Game(name='with all of my fellow users'))
 
 	#Parse the id from a string
 	def parse_id_from_string(self, id_string):
