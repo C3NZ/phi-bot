@@ -17,6 +17,7 @@ class CommandHistory(Base):
 	command_id = Column(Integer, primary_key=True)
 	command = Column(String(50))
 	params = Column(String(50))
+	discord_name = Column(String(50))
 	discord_id = Column(String(50))
 
 #User command entered count table
@@ -118,8 +119,8 @@ def user_in_bank(discord_id):
 	return in_db
 
 #Add commands to our history
-def add_command_to_history(command_name, parameters, discord_id):
+def add_command_to_history(command_name, parameters, discord_name, discord_id):
 	session = Session()
-	command = CommandHistory(command=command_name, params=parameters, discord_id=discord_id)
+	command = CommandHistory(command=command_name, params=parameters, discord_name=discord_name, discord_id=discord_id)
 	session.add(command)
 	session.commit()
