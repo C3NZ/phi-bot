@@ -17,9 +17,12 @@ class Emitter:
 	command_count = 0
 	counter = 0
 	running = True
-
 	aio_file = None
-	
+
+	#Initial DEV_MODE message to be printed upon the first time runnning the bot in a dev environment
+	init_dev_mode_b = False
+	init_dev_mode_m = 'IF YOU\'RE SEEING THIS, THAT MEANS YOU HAVE DEV MODE ON WHICH SHOULD BE TURNED OFF FOR PRODUCTION USE'
+
 	if os.path.isfile(file_name):
 		aio_file = AIOFile(file_name, 'a+')
 	else:
@@ -42,6 +45,9 @@ class Emitter:
 			Emitter.counter += 1
 
 		if config.DEV_MODE:
+			if not Emitter.init_dev_mode_b:
+				Emitter.init_dev_mode_b = True
+				print(Emitter.init_dev_mode_m)
 			print('---[EVENT]---')
 			print(log_string + ' was written to file')
 			print('--------------\n')
