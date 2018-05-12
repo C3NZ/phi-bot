@@ -1,11 +1,10 @@
-
 #std lib && imported files
 import discord
 import asyncio
 import aiohttp
 import random
 
-#custom files
+#custom libs
 import config
 import db
 from event import Emitter
