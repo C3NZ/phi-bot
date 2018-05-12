@@ -5,7 +5,7 @@ import datetime
 import os
 from aiofile import AIOFile, Writer
 
-#User libraries
+#Custom libs
 import config
 
 #Event emitter
@@ -15,7 +15,7 @@ class Emitter:
 	current_date = datetime.date.today()
 	file_name = "logs/{}-{}-{}.txt".format(current_date.month, current_date.day, current_date.year)
 	command_count = 0
-	counter = 0
+	event_counter = 0
 	running = True
 	aio_file = None
 
@@ -38,16 +38,17 @@ class Emitter:
 
 		await Emitter.writer(bytes(log_string, 'utf-8'))
 
-		if Emitter.counter == 99:
-			Emitter.counter = 0
+		if Emitter.event_counter == 99:
+			Emitter.event_counter = 0
 			await Emitter.aio_file.fsync()
 		else:
-			Emitter.counter += 1
+			Emitter.event_counter += 1
 
 		if config.DEV_MODE:
 			if not Emitter.init_dev_mode_b:
 				Emitter.init_dev_mode_b = True
 				print(Emitter.init_dev_mode_m)
+			
 			print('---[EVENT]---')
 			print(log_string + ' was written to file')
 			print('--------------\n')
@@ -57,19 +58,3 @@ class Emitter:
 	async def shutdown():
 		await Emitter.aio_file.fsync()
 		Emitter.aio_file.close()
-
-#Event node
-class Event:
-	def __init__(self, event, event_data, time):
-		self.event = event
-		self.event_data = event_data
-		self.time = time
-
-	def get_event(self):
-		return self.event
-
-	def get_event_data(self):
-		return self.event_data
-
-	def get_time(self):
-		return self.time
