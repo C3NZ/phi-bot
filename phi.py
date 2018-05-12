@@ -1,15 +1,21 @@
 
+#std lib && imported files
 import discord
 import asyncio
+import aiohttp
+import random
+
+#custom files
 import config
 import db
-import random
+from event import Emitter
 
 #Discord client PhiBot
 class PhiBot(discord.Client):
 
 	def __init__(self, lock):
 		super().__init__()
+		self.running = True
 		self.lock = lock
 		self.eb_quotes = [
 		'It is certain',
@@ -33,18 +39,21 @@ class PhiBot(discord.Client):
 		'Outlook not so good',
 		'Very doubtful'
 		]
-		
+		self.shortener_endpoint = 'https://www.googleapis.com/urlshortener/v1/url'
+	
+	def set_running(self, running):
+		self.running = running
+
+
 	#on startup
 	async def on_ready(self):
-		print('logged in as')
-		print(self.user.name)
-		print(self.user.id)
-		print('-----')
 
 		if config.DEV_MODE:
 			await self.change_presence(game=discord.Game(name='phi-bot DEV_MODE'))
 		else:
 			await self.change_presence(game=discord.Game(name='with all of my fellow users'))
+
+		await Emitter.emit('Successfully-logged-in', 'Logged in as:{} with a user ID of:{}'.format(self.user.name, self.user.id))
 
 	#Parse the id from a string
 	def parse_id_from_string(self, id_string):
@@ -59,8 +68,26 @@ class PhiBot(discord.Client):
 	async def thats_me(self, message):
 		await self.send_message(message.channel, 'Hey, that\'s me!')	
 
+	#The magical 8ball
 	async def eight_ball(self, message):
 		await self.send_message(message.channel, random.choice(self.eb_quotes))
+
+	#link shortener
+	async def shorten_url(self, message):
+		params = {'key':config.SHORTENER_KEY}
+		headers = {'Content-Type': 'application/json'}
+		url = message.content.split(' ')[1]
+
+		async with aiohttp.ClientSession() as session:
+			async with session.post(self.shortener_endpoint, params=params, json={'longUrl':url}, headers=headers) as response:
+				if response.status == 200:
+					json = await response.json()
+					reply = 'Your shortened url:{}'.format(json['id'])
+					await self.send_message(message.channel, reply)
+					await Emitter.emit('Shorten-Success', 'URL:{} shortened to URL:{}'.format(url, json['id']))
+				else:
+					await self.send_message(message.channel, 'You did not provide a correct URL')
+					await Emitter.emit('Shorten-Failure', 'URL:{} was attempted'.format(url))
 
 	#Start a users bank account if they don't already ahve one
 	async def start_bank_account(self, message):
@@ -171,6 +198,8 @@ class PhiBot(discord.Client):
 			await self.process_bank_account(message)
 		elif content.startswith('$8ball'):
 			await self.eight_ball(message)
+		elif content.startswith('$shorten'):
+			await self.shorten_url(message)
 		else:
 			await self.send_message(message.channel, '```Sorry, you didn\'t enter a valid command, please try $help for more information```')
 			return False
@@ -184,14 +213,20 @@ class PhiBot(discord.Client):
 
 		#Log command to database
 		if valid_command:
+			await Emitter.emit('Processed command', 'Just finished processing a valid command')
 			user_input = message.content.split()
 			with await self.lock:
 				db.add_command_to_history(user_input[0], " ".join(user_input[1:]), message.author.name, message.author.id)
+				
+
 
 
 #Shutdown bp
-def shutdown():
-	print('Shutting down...')
+async def shutdown():
+	await Emitter.emit('Bot shutdown phase', 'Bot is now turning off')
+	await Emitter.shutdown()
+
+	
 
 def main(loop):
 	#Shared lock for keeping database information safe
@@ -203,7 +238,9 @@ def main(loop):
 	try:
 		loop.run_until_complete(phi.start(config.DISCORD_TOKEN))
 	except KeyboardInterrupt:
+		phi.set_running(False)
 		loop.run_until_complete(phi.logout())
+		loop.run_until_complete(shutdown())
 	finally:
 		loop.close()
 
