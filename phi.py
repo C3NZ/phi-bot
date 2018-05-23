@@ -81,7 +81,7 @@ class PhiBot(discord.Client):
 			async with session.post(self.shortener_endpoint, params=params, json={'longUrl':url}, headers=headers) as response:
 				if response.status == 200:
 					json = await response.json()
-					reply = 'Your shortened url:{}'.format(json['id'])
+					reply = 'Your shortened url: {}'.format(json['id'])
 					await self.send_message(message.channel, reply)
 					await Emitter.emit('Shorten-Success', 'URL:{} shortened to URL:{}'.format(url, json['id']))
 				else:
@@ -212,7 +212,7 @@ class PhiBot(discord.Client):
 
 		#Log command to database
 		if valid_command:
-			await Emitter.emit('Processed command', 'Just finished processing a valid command')
+			await Emitter.emit('Processed-Command', 'Just finished processing a valid command')
 			user_input = message.content.split()
 			with await self.lock:
 				db.add_command_to_history(user_input[0], " ".join(user_input[1:]), message.author.name, message.author.id)
