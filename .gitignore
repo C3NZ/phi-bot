@@ -5,3 +5,7 @@ __pycache__/
 
 #Config including sensitive information
 config.py
+
+TODO.md
+
+logs/*.txt
